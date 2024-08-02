@@ -6,16 +6,18 @@ project (LearnVulkan)
 
 
 # 将源代码添加到此项目的可执行文件。
-add_executable (LearnVulkan "main.cpp" )
+add_executable (LearnVulkan "main.cpp"  "HelloTriangleApplication.h" "HelloTriangleApplication.cpp" "tool.h")
 
 set_property(TARGET LearnVulkan PROPERTY CXX_STANDARD 17)
 
+# set the director of vulkan
+set(VULKAN_DIR "F:/Vulkan")
 
 include_directories (${PROJECT_SOURCE_DIR}/lib/glm)
-include_directories (F:/Vulkan/Include)
+include_directories (${VULKAN_DIR}/Include)
 include_directories (${PROJECT_SOURCE_DIR}/lib/glfw/include)
 
-target_link_libraries(LearnVulkan F:/Vulkan/Lib/vulkan-1.lib
+target_link_libraries(LearnVulkan ${VULKAN_DIR}/Lib/vulkan-1.lib
 )
 
 target_link_libraries(LearnVulkan 
