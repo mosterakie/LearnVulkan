@@ -15,5 +15,5 @@ project ("LearnVulkan")
 add_subdirectory ("LearnVulkan")
 
 
-add_compile_definitions(DEBUG)
+
 
