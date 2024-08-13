@@ -1,6 +1,11 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+
+//#include <GLFW/glfw3native.h>
+//#include <vulkan/vulkan.h>
+//#include <vulkan/vulkan_win32.h>
+
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
@@ -19,18 +24,20 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
+const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
 const std::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME //"VK_KHR_swapchain"
 };
 
 #ifdef DEBUG
     const bool enableValidationLayers = true;
 #else
-    const bool enableValidationLayers = true;
+    const bool enableValidationLayers = false;
 #endif
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
@@ -149,8 +156,10 @@ private:
     VkCommandPool commandPool;
     VkCommandBuffer commandBuffer;
 
-    VkSemaphore imageAvailableSemaphore;
-    VkSemaphore renderFinishedSemaphore;
-    VkFence inFlightFence;
+    std::vector<VkSemaphore> imageAvailableSemaphores;
+    std::vector<VkSemaphore> renderFinishedSemaphores;
+    std::vector<VkFence> inFlightFences;
+
+    uint32_t currentFrame = 0;
 };
 

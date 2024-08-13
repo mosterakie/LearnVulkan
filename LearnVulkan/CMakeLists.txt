@@ -24,6 +24,7 @@ target_link_libraries(LearnVulkan
     ${PROJECT_SOURCE_DIR}/lib/glfw/lib-vc2022/glfw3.lib
 )
 
-
+#add_compile_definitions(DEBUG)
+target_compile_definitions(LearnVulkan PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 
 # TODO: 如有需要，请添加测试并安装目标。
