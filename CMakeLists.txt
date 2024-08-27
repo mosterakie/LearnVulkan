@@ -11,9 +11,13 @@ endif()
 
 project ("LearnVulkan")
 
-# 包含子项目。
-add_subdirectory ("LearnVulkan")
+find_program(GLSL_PROGRAM glslangValidator REQUIRED)
+execute_process(COMMAND ${GLSL_PROGRAM} -V ${CMAKE_SOURCE_DIR}/Core/shaders/shader.vert -o ${CMAKE_SOURCE_DIR}/Core/shaders/vert.spv)
+execute_process(COMMAND ${GLSL_PROGRAM} -V ${CMAKE_SOURCE_DIR}/Core/shaders/shader.frag -o ${CMAKE_SOURCE_DIR}/Core/shaders/frag.spv)
 
+# 包含子项目。
+add_subdirectory ("Core")
+add_subdirectory ("Sandbox")
 
 
 
