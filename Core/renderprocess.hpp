@@ -8,16 +8,17 @@ namespace doll {
 		void InitPipeline(int width,int height);
 		void InitLayout();
 		void InitRenderPass();
+		vk::UniqueDescriptorSetLayout createSetlayout();
 		~RenderProcess();
 	private:
 
 
 	public:
-		vk::Pipeline pipeline;
+		vk::UniquePipeline pipeline;
 		vk::UniquePipelineLayout layout;
 		vk::UniqueRenderPass renderpass;
+		vk::UniqueDescriptorSetLayout setlayout;
 	private:
-
 	};
 
 	 

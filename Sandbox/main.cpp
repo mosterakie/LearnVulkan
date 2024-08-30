@@ -27,16 +27,16 @@ int main() {
                 throw std::runtime_error("failed to creaete surface!");
             return surface;
             });
-        doll::Context::Getinstance().initSwapchain(width,height);
+        doll::Context::Instance().initSwapchain(width,height);
         doll::Shader::Init(doll::readFileString("F:\\dev\\LearnVulkan\\LearnVulkan\\Core\\shaders\\vert.spv"), 
                             doll::readFileString("F:\\dev\\LearnVulkan\\LearnVulkan\\Core\\shaders\\frag.spv"));
-        doll::Context::Getinstance().renderProcess->InitRenderPass();
-        doll::Context::Getinstance().swapchain->CreateFramebuffers(width,height);
-        doll::Context::Getinstance().renderProcess->InitLayout();
-        doll::Context::Getinstance().renderProcess->InitPipeline(width,height);
-        doll::Context::Getinstance().initRenderer();
+        doll::Context::Instance().renderProcess->InitRenderPass();
+        doll::Context::Instance().swapchain->CreateFramebuffers(width,height);
+        doll::Context::Instance().renderProcess->InitLayout();
+        doll::Context::Instance().renderProcess->InitPipeline(width,height);
+        doll::Context::Instance().initRenderer();
 
-        auto& renderer = *doll::Context::Getinstance().renderer;
+        auto& renderer = *doll::Context::Instance().renderer;
         
         while (!w.ShouldClose())
         {
@@ -46,11 +46,11 @@ int main() {
 
         //QUIT
         //TODO::make a better solution to destruct 
-        doll::Context::Getinstance().device.waitIdle();
-        doll::Context::Getinstance().renderer.reset();
-        doll::Context::Getinstance().renderProcess.reset();
+        doll::Context::Instance().device.waitIdle();
+        doll::Context::Instance().renderer.reset();
+        doll::Context::Instance().renderProcess.reset();
         doll::Shader::Quit();
-        doll::Context::Getinstance().DestroySwapchain();
+        doll::Context::Instance().DestroySwapchain();
         doll::Context::Quit();
         return EXIT_SUCCESS;
     }

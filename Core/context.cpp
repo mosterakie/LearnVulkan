@@ -1,16 +1,16 @@
 #include"context.hpp"
 
 namespace doll {
-	std::unique_ptr<Context> Context::instance_ = nullptr;
+	Context* Context::instance_ = nullptr;
 
 	void Context::Init(std::vector<const char*> extensions, CreateSurfaceFunc func) {
-		instance_.reset(new Context(extensions,func));
+		instance_ = new Context(extensions, func);
 	}
 	void Context::Quit() {
-		instance_.reset();
+		delete instance_;
 	}
 
-	Context& Context::Getinstance()
+	Context& Context::Instance()
 	{
 		return *instance_;
 	}

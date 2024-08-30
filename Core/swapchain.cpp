@@ -10,14 +10,14 @@ namespace doll {
 			.setImageArrayLayers(1)
 			.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
 			.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
-			.setSurface(Context::Getinstance().surface)
+			.setSurface(Context::Instance().surface)
 			.setImageColorSpace(info.format.colorSpace)
 			.setImageFormat(info.format.format)
 			.setImageExtent(info.imageExtent)
 			.setMinImageCount(info.imagecount)
 			.setPresentMode(info.presentmode)
 			;
-		auto& queueIndices = Context::Getinstance().queueFamliyIndices;
+		auto& queueIndices = Context::Instance().queueFamliyIndices;
 		if (queueIndices.graphicsQueue.value() == queueIndices.presentQueue.value())
 		{
 			createInfo.setQueueFamilyIndices(queueIndices.graphicsQueue.value())
@@ -31,7 +31,7 @@ namespace doll {
 				.setImageSharingMode(vk::SharingMode::eConcurrent)
 				;
 		}
-		swapchain = Context::Getinstance().device.createSwapchainKHR(createInfo);
+		swapchain = Context::Instance().device.createSwapchainKHR(createInfo);
 
 		getImages();
 		createImageViews();
@@ -40,14 +40,14 @@ namespace doll {
 	{
 		for (auto& imageView : imageViews)
 		{
-			Context::Getinstance().device.destroyImageView(imageView);
+			Context::Instance().device.destroyImageView(imageView);
 		}
-		Context::Getinstance().device.destroySwapchainKHR(swapchain);
+		Context::Instance().device.destroySwapchainKHR(swapchain);
 	}
 	void Swapchain::queryinfo(int w,int h)
 	{
-		auto& physicalDevice = Context::Getinstance().physicaldevice;
-		auto& surface = Context::Getinstance().surface;
+		auto& physicalDevice = Context::Instance().physicaldevice;
+		auto& surface = Context::Instance().surface;
 		auto formats = physicalDevice.getSurfaceFormatsKHR(surface);
 		info.format = formats[0];
 		for (const auto& format : formats)
@@ -77,7 +77,7 @@ namespace doll {
 	}
 	void Swapchain::getImages()
 	{
-		images = Context::Getinstance().device.getSwapchainImagesKHR(swapchain);
+		images = Context::Instance().device.getSwapchainImagesKHR(swapchain);
 	}
 	void Swapchain::createImageViews()
 	{
@@ -99,7 +99,7 @@ namespace doll {
 				.setFormat(info.format.format)
 				.setSubresourceRange(range)
 				;
-			imageViews[i] = Context::Getinstance().device.createImageView(createInfo);
+			imageViews[i] = Context::Instance().device.createImageView(createInfo);
 		}
 	}
 
@@ -112,10 +112,10 @@ namespace doll {
 			createInfo.setAttachments(imageViews[i])
 				.setWidth(w)
 				.setHeight(h)
-				.setRenderPass(Context::Getinstance().renderProcess->renderpass.get())
+				.setRenderPass(Context::Instance().renderProcess->renderpass.get())
 				.setLayers(1)
 				;
-			framebuffers[i] = Context::Getinstance().device.createFramebufferUnique(createInfo);
+			framebuffers[i] = Context::Instance().device.createFramebufferUnique(createInfo);
 		}
 	}
 }
