@@ -19,11 +19,11 @@ namespace doll {
 		createInfo.setCodeSize(vertexSource.size())
 			.setPCode((uint32_t*)(vertexSource.data()))
 			;
-		vertexMoudle = Context::Getinstance().device.createShaderModule(createInfo);
+		vertexMoudle = Context::Instance().device.createShaderModule(createInfo);
 		createInfo.setCodeSize(fragSource.size())
 			.setPCode((uint32_t*)(fragSource.data()))
 			;
-		fragMoudle = Context::Getinstance().device.createShaderModule(createInfo);
+		fragMoudle = Context::Instance().device.createShaderModule(createInfo);
 		initStage();
 	}
 	Shader& Shader::GetInstance()
@@ -32,7 +32,7 @@ namespace doll {
 	}
 	Shader::~Shader()
 	{
-		auto& device = Context::Getinstance().device;
+		auto& device = Context::Instance().device;
 		device.destroyShaderModule(vertexMoudle);
 		device.destroyShaderModule(fragMoudle);
 	}

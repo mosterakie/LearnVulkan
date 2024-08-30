@@ -2,6 +2,8 @@
 #include "shader.hpp"
 #include "context.hpp"
 #include "swapchain.hpp"
+#include "uniform.hpp"
+#include "vertex.hpp"
 
 
 namespace doll {
@@ -12,6 +14,10 @@ namespace doll {
 
 		//1.Vertex Input
 		vk::PipelineVertexInputStateCreateInfo inputstate;
+		auto attr = Vertex::GetAttrD();
+		auto binding = Vertex::GetBindD();
+		inputstate.setVertexAttributeDescriptions(attr)
+			.setVertexBindingDescriptions(binding);
 		createInfo.setPVertexInputState(&inputstate);
 
 
@@ -77,25 +83,27 @@ namespace doll {
 			;
 
 
-		auto res = Context::Getinstance().device.createGraphicsPipeline(nullptr,createInfo);
+		auto res = Context::Instance().device.createGraphicsPipelineUnique(nullptr,createInfo);
 		if (res.result != vk::Result::eSuccess)
 		{
 			throw std::runtime_error("failed to create pipeline!");
 		}
-		pipeline = res.value;
+		pipeline= std::move(res.value); //wtf
 	}
 
 	void RenderProcess::InitLayout()
 	{
 		vk::PipelineLayoutCreateInfo createInfo;
-		layout = Context::Getinstance().device.createPipelineLayoutUnique(createInfo);
+		createInfo.setSetLayouts(setlayout.get());
+		layout = Context::Instance().device.createPipelineLayoutUnique(createInfo);
 	}
 
 	void RenderProcess::InitRenderPass()
 	{
+		setlayout = createSetlayout();
 		vk::RenderPassCreateInfo createInfo;
 		vk::AttachmentDescription attachDesc;
-		attachDesc.setFormat(Context::Getinstance().swapchain->info.format.format)
+		attachDesc.setFormat(Context::Instance().swapchain->info.format.format)
 			.setInitialLayout(vk::ImageLayout::eUndefined)
 			.setFinalLayout(vk::ImageLayout::ePresentSrcKHR)
 			.setLoadOp(vk::AttachmentLoadOp::eClear)
@@ -125,11 +133,20 @@ namespace doll {
 			;
 		createInfo.setDependencies(dependency);
 
-		renderpass = Context::Getinstance().device.createRenderPassUnique(createInfo);
+		renderpass = Context::Instance().device.createRenderPassUnique(createInfo);
 	}
 	
+
+	vk::UniqueDescriptorSetLayout RenderProcess::createSetlayout()
+	{
+		vk::DescriptorSetLayoutCreateInfo createInfo;
+		auto binding = Uniform::GetBinding();
+		createInfo.setBindings(binding);
+
+		return Context::Instance().device.createDescriptorSetLayoutUnique(createInfo);
+	}
+
 	RenderProcess::~RenderProcess()
 	{
-		Context::Getinstance().device.destroyPipeline(pipeline);
 	}
 }

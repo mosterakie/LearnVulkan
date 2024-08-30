@@ -32,7 +32,7 @@ namespace doll {
 	public:
 		static void Init(std::vector<const char*> extensions, CreateSurfaceFunc func);
 		static void Quit();
-		static Context& Getinstance();
+		static Context& Instance();
 		void initSwapchain(int w,int h){swapchain.reset(new Swapchain(w, h));}
 		void DestroySwapchain() { swapchain.reset(); }
 		void initRenderer();
@@ -58,12 +58,13 @@ namespace doll {
 		std::unique_ptr<Swapchain> swapchain;
 		std::unique_ptr<RenderProcess> renderProcess;
 		std::unique_ptr<Renderer> renderer;
+
 	private:
 		//GLFWwindow* window;
 		
 
 
-		static std::unique_ptr<Context> instance_;
+		static Context* instance_;
 	};
 
 }
