@@ -1,16 +1,17 @@
-#include "renderer.hpp"
-#include "context.hpp"
-#include "vertex.hpp"
-#include "uniform.hpp"
+#include "doll/renderer.hpp"
+#include "doll/context.hpp"
+#include "doll/vertex.hpp"
+#include "doll/uniform.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include <chrono>
 
+
 namespace doll {
 	const std::array<Vertex, 5> vertices = {
-		Vertex{-0.5,-0.5,0.0},
-		Vertex{0.5,-0.5,0.0},
-		Vertex{0.5,0.5,0.0},
-		Vertex{-0.5,0.5,0.0}
+		Vertex{{ -0.5,-0.5,0.0},{1.0f, 0.0f}},
+		Vertex{{ 0.5f, -0.5f,0.0},{0.0f, 0.0f}},
+		Vertex{{ 0.5,0.5,0.0},{0.0f, 1.0f}},
+		Vertex{{ -0.5,0.5,0.0},{1.0f, 1.0f}}
 	};
 	const std::vector<uint16_t> indices{ 0, 1, 2, 2, 3, 0 };
 
@@ -27,7 +28,7 @@ namespace doll {
 		createUniformBuffer();
 		createDescriptorPool();
 		allocateSets();
-		updateSets();
+		//updateSets();
 		createIndexBuffer();
 		bufferIndexData();
 	}
@@ -74,7 +75,7 @@ namespace doll {
 		return device.allocateCommandBuffersUnique(allocInfo);
 	}
 
-	void Renderer::DrawTriangle()
+	void Renderer::DrawFrame()
 	{
 		auto& device = Context::Instance().device;
 		auto& renderProcess = Context::Instance().renderProcess;
@@ -116,7 +117,7 @@ namespace doll {
 		uni.mvp.proj[1][1] *= -1;
 
 		bufferUniformData(uni, curFrame_);
-
+		//updateSingleSet(curFrame_);
 
 		auto cmdbuf = cmdBufs_[curFrame_].get();
 		cmdbuf.reset();
@@ -225,14 +226,14 @@ namespace doll {
 
 		for (auto& buffer : cpuUniformBuffer_)
 		{
-			buffer.reset(new Buffer(sizeof(Uniform),
+			buffer.reset(new Buffer(Uniform::getSize(),
 				vk::BufferUsageFlagBits::eTransferSrc,
 				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
 		}
 
 		for (auto& buffer : gpuUniformBuffer_)
 		{
-			buffer.reset(new Buffer(sizeof(Uniform),
+			buffer.reset(new Buffer(Uniform::getSize(),
 				vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
 				vk::MemoryPropertyFlagBits::eDeviceLocal));
 		}
@@ -242,7 +243,9 @@ namespace doll {
 		//for (int i = 0; i < cpuUniformBuffer_.size(); i++) {
 			auto& buffer = cpuUniformBuffer_[curr];
 			void* ptr = Context::Instance().device.mapMemory(buffer.get()->memory.get(), 0, buffer->size);
-			memcpy(ptr, &uniform, sizeof(uniform));
+			//memcpy(ptr, &uniform, sizeof(uniform));
+			memcpy(ptr, &uniform.color, sizeof(Color));
+			memcpy(static_cast<uint8_t*>(ptr) + ((sizeof(Color) + 64 - 1) & ~(64 - 1)), &uniform.mvp, sizeof(mvpMatrix));
 			Context::Instance().device.unmapMemory(buffer.get()->memory.get());
 
 			copyBuffer(buffer.get()->buffer.get(), gpuUniformBuffer_[curr]->buffer.get(), buffer->size, 0, 0);
@@ -271,31 +274,73 @@ namespace doll {
 		sets_ = Context::Instance().device.allocateDescriptorSets(allocInfo);
 	}
 
-	void Renderer::updateSets()
+	void Renderer::updateSets(vk::ImageView imageView,vk::Sampler sampler)
 	{
 		for (int i=0;i<sets_.size();++i)
 		{
 			auto& set = sets_[i];
-			vk::DescriptorBufferInfo bufferInfo;
-			bufferInfo.setBuffer(gpuUniformBuffer_[i]->buffer.get())
+			vk::DescriptorBufferInfo bufferInfo0;
+			bufferInfo0.setBuffer(gpuUniformBuffer_[i]->buffer.get())
 				.setOffset(0)
-				.setRange(gpuUniformBuffer_[i]->size);
+				.setRange(sizeof(Color));
 
-			vk::WriteDescriptorSet writer;
-			writer.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-				.setBufferInfo(bufferInfo)
+			vk::WriteDescriptorSet writer0;
+			writer0.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+				.setBufferInfo(bufferInfo0)
 				.setDstBinding(0)
 				.setDstSet(set)
 				.setDstArrayElement(0)
 				.setDescriptorCount(1);
 
-			Context::Instance().device.updateDescriptorSets(writer, {});
+			vk::DescriptorBufferInfo bufferInfo1;
+			bufferInfo1.setBuffer(gpuUniformBuffer_[i]->buffer.get())
+				.setOffset((sizeof(Color) + 64 - 1) & ~(64 - 1))
+				.setRange(sizeof(mvpMatrix));
+
+			vk::WriteDescriptorSet writer1;
+			writer1.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+				.setBufferInfo(bufferInfo1)
+				.setDstBinding(1)
+				.setDstSet(set)
+				.setDstArrayElement(0)
+				.setDescriptorCount(1);
+
+
+			vk::DescriptorImageInfo imageInfo;
+			imageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+				.setImageView(imageView)
+				.setSampler(sampler);
+
+			vk::WriteDescriptorSet writer3;
+			writer3.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+				.setImageInfo(imageInfo)
+				.setDstBinding(2)
+				.setDstSet(set)
+				.setDstArrayElement(0)
+				.setDescriptorCount(1);
+
+			std::vector<vk::WriteDescriptorSet> writers = { writer0, writer1 , writer3};
+			Context::Instance().device.updateDescriptorSets(writers,{});
 		}
 	}
 
 	void Renderer::updateSingleSet(int index)
 	{
+		auto& set = sets_[index];
+		vk::DescriptorBufferInfo bufferInfo;
+		bufferInfo.setBuffer(gpuUniformBuffer_[index]->buffer.get())
+			.setOffset(0)
+			.setRange(gpuUniformBuffer_[index]->size);
 
+		vk::WriteDescriptorSet writer;
+		writer.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+			.setBufferInfo(bufferInfo)
+			.setDstBinding(0)
+			.setDstSet(set)
+			.setDstArrayElement(0)
+			.setDescriptorCount(1);
+
+		Context::Instance().device.updateDescriptorSets(writer, {});
 	}
 
 	void Renderer::createIndexBuffer()
@@ -315,8 +360,6 @@ namespace doll {
 
 		copyBuffer(cpuIndexBuffer_->buffer.get(), gpuIndexBuffer_->buffer.get(), cpuIndexBuffer_.get()->size, 0, 0);
 	}
-
-
 
 
 
@@ -366,4 +409,100 @@ namespace doll {
 
 		Context::Instance().device.waitIdle();
 	}
+
+	void Renderer::copyBuf2Image(vk::Buffer& src, vk::Image& dst, uint32_t width, uint32_t height)
+	{
+		auto& cmdBuf = createOneCommandBufferUnique();
+		auto cmdbuf = cmdBuf.get();
+
+		vk::ImageSubresourceLayers subsource;
+		subsource.setMipLevel(0)
+			.setAspectMask(vk::ImageAspectFlagBits::eColor)
+			.setLayerCount(1)
+			.setBaseArrayLayer(0);
+
+		vk::BufferImageCopy region;
+		region.setImageOffset({ 0,0,0 })
+			.setBufferOffset(0)
+			.setBufferImageHeight(0)
+			.setBufferRowLength(0)
+			.setImageExtent({ width,height,1 })
+			.setImageSubresource(subsource);
+
+		std::vector<vk::BufferImageCopy> regions{ region };
+
+		vk::CommandBufferBeginInfo begin;
+		begin.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+		cmdbuf.begin(begin);
+		{
+			cmdbuf.copyBufferToImage(src,dst,vk::ImageLayout::eTransferDstOptimal,regions);
+		}
+		cmdbuf.end();
+
+		vk::SubmitInfo submit;
+		submit.setCommandBuffers(cmdbuf);
+		Context::Instance().graphicsQueue.submit(submit);
+
+		Context::Instance().device.waitIdle();
+	}
+
+
+	void Renderer::transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldlayout, vk::ImageLayout newlayout)
+	{
+		vk::ImageSubresourceRange range;
+		range.setAspectMask(vk::ImageAspectFlagBits::eColor)
+			.setBaseArrayLayer(0)
+			.setBaseMipLevel(0)
+			.setLayerCount(1)
+			.setLevelCount(1);
+
+		vk::ImageMemoryBarrier barrier;
+		barrier.setOldLayout(oldlayout)
+			.setNewLayout(newlayout)
+			.setImage(image)
+			.setSubresourceRange(range);
+
+		vk::PipelineStageFlags sourceStage,destinationStage;
+		if (oldlayout == vk::ImageLayout::eUndefined && newlayout == vk::ImageLayout::eTransferDstOptimal)
+		{
+			barrier.setSrcAccessMask(vk::AccessFlagBits::eNone)
+				.setDstAccessMask(vk::AccessFlagBits::eTransferWrite)
+				.setDstQueueFamilyIndex(vk::QueueFamilyIgnored)
+				.setSrcQueueFamilyIndex(vk::QueueFamilyIgnored);
+			sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+			destinationStage = vk::PipelineStageFlagBits::eTransfer;
+		}else if (oldlayout == vk::ImageLayout::eTransferDstOptimal && newlayout == vk::ImageLayout::eShaderReadOnlyOptimal)
+		{
+			barrier.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+				.setDstAccessMask(vk::AccessFlagBits::eShaderRead)
+				.setDstQueueFamilyIndex(vk::QueueFamilyIgnored)
+				.setSrcQueueFamilyIndex(vk::QueueFamilyIgnored);
+			sourceStage = vk::PipelineStageFlagBits::eTransfer;
+			destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
+		}
+
+
+
+		auto& cmdBuf = createOneCommandBufferUnique();
+		auto cmdbuf = cmdBuf.get();
+
+
+		vk::CommandBufferBeginInfo begin;
+		begin.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+		cmdbuf.begin(begin);
+		{
+			cmdbuf.pipelineBarrier(sourceStage,
+				destinationStage,
+				{}, {}, nullptr, barrier);
+		}
+		cmdbuf.end();
+
+
+		vk::SubmitInfo submit;
+		submit.setCommandBuffers(cmdbuf);
+		Context::Instance().graphicsQueue.submit(submit);
+
+		Context::Instance().device.waitIdle();
+	}
 }
+

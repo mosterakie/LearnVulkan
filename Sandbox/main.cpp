@@ -5,6 +5,7 @@
 #include "context.hpp"
 #include "windowdoll.hpp"
 #include "shader.hpp"
+#include "image.hpp"
 const int width = 800;
 const int height = 600;
 
@@ -27,23 +28,33 @@ int main() {
                 throw std::runtime_error("failed to creaete surface!");
             return surface;
             });
-        doll::Context::Instance().initSwapchain(width,height);
-        doll::Shader::Init(doll::readFileString("F:\\dev\\LearnVulkan\\LearnVulkan\\Core\\shaders\\vert.spv"), 
-                            doll::readFileString("F:\\dev\\LearnVulkan\\LearnVulkan\\Core\\shaders\\frag.spv"));
+        doll::Context::Instance().initSwapchain(width, height);
+        doll::Shader::Init(doll::readFileString("F:\\dev\\LearnVulkan\\LearnVulkan\\Core\\shaders\\vert.spv"),
+            doll::readFileString("F:\\dev\\LearnVulkan\\LearnVulkan\\Core\\shaders\\frag.spv"));
         doll::Context::Instance().renderProcess->InitRenderPass();
-        doll::Context::Instance().swapchain->CreateFramebuffers(width,height);
+        doll::Context::Instance().swapchain->CreateFramebuffers(width, height);
         doll::Context::Instance().renderProcess->InitLayout();
-        doll::Context::Instance().renderProcess->InitPipeline(width,height);
+        doll::Context::Instance().renderProcess->InitPipeline(width, height);
         doll::Context::Instance().initRenderer();
 
         auto& renderer = *doll::Context::Instance().renderer;
-        
+
+        {
+        doll::Image image("F:/dev/LearnVulkan/LearnVulkan/Sandbox/textures/hina.jpg");
+        renderer.transitionImageLayout(image.getImage(), vk::Format::eR8G8B8A8Srgb, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+        renderer.copyBuf2Image(image.getBuffer(), image.getImage(), image.texWidth, image.texHeight);
+        renderer.transitionImageLayout(image.getImage(), vk::Format::eR8G8B8A8Srgb, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+        renderer.updateSets(image.getImageView(), image.getSampler());
+
         while (!w.ShouldClose())
         {
             w.OnUpdate();
-            renderer.DrawTriangle();
+            renderer.DrawFrame();
         }
 
+        }
+        //image.Destroy();
+        //image.~Image();
         //QUIT
         //TODO::make a better solution to destruct 
         doll::Context::Instance().device.waitIdle();

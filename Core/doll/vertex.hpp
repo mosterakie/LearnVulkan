@@ -5,16 +5,23 @@
 namespace doll {
 	struct Vertex final
 	{
-		float x, y, z;
+		glm::vec3 pos;
+		glm::vec2 texCoord;
 
-		static vk::VertexInputAttributeDescription GetAttrD()
+		static std::array<vk::VertexInputAttributeDescription, 2> GetAttrD()
 		{
-			vk::VertexInputAttributeDescription attr;
-			attr.setBinding(0)
+			std::array<vk::VertexInputAttributeDescription, 2> attributeDescriptions{};
+			attributeDescriptions[0].setBinding(0)
 				.setFormat(vk::Format::eR32G32B32Sfloat)
 				.setLocation(0)
 				.setOffset(0);
-			return attr;
+
+			attributeDescriptions[1].setBinding(0)
+				.setFormat(vk::Format::eR32G32Sfloat)
+				.setLocation(1)
+				.setOffset(offsetof(Vertex, texCoord));
+
+			return attributeDescriptions;
 		}
 
 		static vk::VertexInputBindingDescription GetBindD()

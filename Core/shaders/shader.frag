@@ -1,7 +1,11 @@
 #version 450
 
+layout(location = 0) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
-layout(location = 0) in vec4 color;
+layout(binding = 0) uniform UniformBufferObject {
+    vec4 color;
+} ubo;
+layout(binding = 2) uniform sampler2D texSampler;
 void main() {
-    outColor = color;
+    outColor = texture(texSampler, fragTexCoord);
 }

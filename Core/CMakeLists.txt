@@ -11,8 +11,6 @@ project (Core)
 file(GLOB_RECURSE HEADER_FILES "*.hpp")
 file(GLOB_RECURSE SOURCE_FILES "*.cpp")
 
-list(REMOVE_ITEM HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/HelloTriangleApplication.hpp")
-list(REMOVE_ITEM SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/HelloTriangleApplication.cpp")
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${HEADER_FILES} ${SOURCE_FILES})
 
@@ -28,6 +26,8 @@ target_include_directories(Core PUBLIC ${PROJECT_SOURCE_DIR})
 target_include_directories(Core PUBLIC ${PROJECT_SOURCE_DIR}/lib/glm)
 target_include_directories(Core PUBLIC ${VULKAN_DIR}/Include)
 target_include_directories(Core PUBLIC ${PROJECT_SOURCE_DIR}/lib/glfw/include)
+target_include_directories(Core PUBLIC ${PROJECT_SOURCE_DIR}/lib)
+target_include_directories(Core PUBLIC ${PROJECT_SOURCE_DIR}/doll)
 
 target_link_libraries(Core ${PROJECT_SOURCE_DIR}/lib/glfw/lib-vc2022/glfw3.lib)
 
