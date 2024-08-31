@@ -1,0 +1,3 @@
+[submodule "Core/lib/stb"]
+	path = Core/lib/stb
+	url = https://github.com/nothings/stb.git
