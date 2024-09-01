@@ -37,6 +37,7 @@ namespace doll {
 		void DestroySwapchain() { swapchain.reset(); }
 		void initRenderer();
 
+		static vk::Format findDepthFormat();
 
 		~Context();
 	private:
@@ -46,6 +47,8 @@ namespace doll {
 		void createDevice();
 		void queryQueueFamliyindices();
 		void getQueue();
+		static bool hasStencilComponent(vk::Format format);
+		static vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 	public:
 		std::vector<const char*> layers;
 		vk::Instance instance;

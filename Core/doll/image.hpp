@@ -14,6 +14,8 @@ namespace doll
 		void Destroy();
 		vk::ImageView getImageView();
 		vk::Sampler getSampler();
+		static void createImage(int width,int height,vk::Format format,vk::ImageTiling tiling,vk::ImageUsageFlagBits usage,vk::MemoryPropertyFlagBits memPro,vk::UniqueImage& image,vk::UniqueDeviceMemory& memory);
+		static void createImageView(vk::Image image, vk::Format format,vk::ImageAspectFlags aspect,vk::UniqueImageView& imageView);
 	private:
 		void createImage(std::string_view src);
 		void createImageview();

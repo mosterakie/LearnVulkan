@@ -2,18 +2,30 @@
 #include "doll/context.hpp"
 #include "doll/vertex.hpp"
 #include "doll/uniform.hpp"
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm/gtc/matrix_transform.hpp"
 #include <chrono>
-
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tinyobjloader/tiny_obj_loader.h"
 
 namespace doll {
-	const std::array<Vertex, 5> vertices = {
+	const std::array<Vertex, 8> vertices = {
 		Vertex{{ -0.5,-0.5,0.0},{1.0f, 0.0f}},
 		Vertex{{ 0.5f, -0.5f,0.0},{0.0f, 0.0f}},
 		Vertex{{ 0.5,0.5,0.0},{0.0f, 1.0f}},
-		Vertex{{ -0.5,0.5,0.0},{1.0f, 1.0f}}
+		Vertex{{ -0.5,0.5,0.0},{1.0f, 1.0f}},
+
+		Vertex{{ -0.5,-0.5,-0.5},{1.0f, 0.0f}},
+		Vertex{{ 0.5f, -0.5f,-0.5},{0.0f, 0.0f}},
+		Vertex{{ 0.5,0.5,-0.5},{0.0f, 1.0f}},
+		Vertex{{ -0.5,0.5,-0.5},{1.0f, 1.0f}
+	}
 	};
-	const std::vector<uint16_t> indices{ 0, 1, 2, 2, 3, 0 };
+	const std::vector<uint16_t> indices{ 
+		0, 1, 2, 2, 3, 0, 
+		4, 5, 6, 6, 7, 4
+	};
 
 
 	Renderer::Renderer(int maxFlightCount):maxFlightCount_(maxFlightCount),curFrame_(0)
@@ -128,15 +140,16 @@ namespace doll {
 		{
 			vk::RenderPassBeginInfo renderPassBegin;
 			vk::Rect2D area;
-			vk::ClearValue cvalue;
+			std::array<vk::ClearValue,2> cvalues{};
 			area.setOffset({ 0,0 })
 				.setExtent(swapchain->info.imageExtent);
 
-			cvalue.setColor(std::array<float, 4>{ 0.2, 0.2, 0.4, 1 });
+			cvalues[0].setColor(std::array<float, 4>{ 0.2, 0.2, 0.4, 1 });
+			cvalues[1].setDepthStencil({ 1.0f,0 });
 			renderPassBegin.setRenderPass(renderProcess->renderpass.get())
 				.setRenderArea(area)
 				.setFramebuffer(swapchain->framebuffers[imageIndex].get())
-				.setClearValues(cvalue)
+				.setClearValues(cvalues)
 				;
 			cmdbuf.beginRenderPass(renderPassBegin, {}); {
 				cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, renderProcess->pipeline.get());
@@ -172,6 +185,7 @@ namespace doll {
 
 		curFrame_ = (curFrame_ + 1) % maxFlightCount_;
 	}
+
 	void Renderer::createSemaphores()
 	{
 		vk::SemaphoreCreateInfo createInfo;
@@ -361,7 +375,16 @@ namespace doll {
 		copyBuffer(cpuIndexBuffer_->buffer.get(), gpuIndexBuffer_->buffer.get(), cpuIndexBuffer_.get()->size, 0, 0);
 	}
 
+	void Renderer::createDepthresources()
+	{
+		vk::Format format = Context::findDepthFormat();
+		auto extent = Context::Instance().swapchain.get()->getExtent();
+		Image::createImage(extent.width, extent.height, format, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal, depthImage_, depthImageMemory_);
+		Image::createImageView(depthImage_.get(), format,vk::ImageAspectFlagBits::eDepth,depthImageView_);
 
+		transitionImageLayout(depthImage_.get(), format, vk::ImageLayout::eUndefined,vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+	}
 
 
 
@@ -480,6 +503,19 @@ namespace doll {
 			sourceStage = vk::PipelineStageFlagBits::eTransfer;
 			destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
 		}
+		else if (oldlayout == vk::ImageLayout::eUndefined && newlayout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+			barrier.setSrcAccessMask(vk::AccessFlagBits::eNone)
+				.setDstAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+				.setDstQueueFamilyIndex(vk::QueueFamilyIgnored)
+				.setSrcQueueFamilyIndex(vk::QueueFamilyIgnored);
+
+			barrier.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth);
+			sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;;
+			destinationStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		}
+		else {
+			throw std::invalid_argument("unsupported layout transition!");
+		}
 
 
 
@@ -504,5 +540,7 @@ namespace doll {
 
 		Context::Instance().device.waitIdle();
 	}
+
+	
 }
 

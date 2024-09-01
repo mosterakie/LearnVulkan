@@ -75,6 +75,64 @@ namespace doll
 			sampler_.reset();
 		}
 	}
+	void Image::createImage(int width, int height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlagBits usage, vk::MemoryPropertyFlagBits memPro, vk::UniqueImage& image, vk::UniqueDeviceMemory& memory)
+	{
+		auto& device = Context::Instance().device;
+		uint32_t size = width * height;
+
+		vk::ImageCreateInfo createInfo;
+		createInfo.setImageType(vk::ImageType::e2D)
+			.setExtent(vk::Extent3D{ uint32_t(width),uint32_t(height),1 })
+			.setMipLevels(1)
+			.setArrayLayers(1)
+			.setFormat(format)
+			.setTiling(tiling)
+			.setUsage(usage)
+			.setInitialLayout(vk::ImageLayout::eUndefined)
+			.setSamples(vk::SampleCountFlagBits::e1)
+			.setSharingMode(vk::SharingMode::eExclusive);
+		image = device.createImageUnique(createInfo);
+
+		auto memRequirements = device.getImageMemoryRequirements(image.get());
+
+		auto properties = Context::Instance().physicaldevice.getMemoryProperties();
+		uint32_t memTypeIndex;
+		for (int i = 0; i < properties.memoryTypeCount; ++i)
+		{
+			if ((1 << i) & memRequirements.memoryTypeBits &&
+				properties.memoryTypes[i].propertyFlags & memPro)
+			{
+				memTypeIndex = i;
+				break;
+			}
+		}
+		vk::MemoryAllocateInfo allocInfo;
+		allocInfo.setAllocationSize(memRequirements.size)
+			.setMemoryTypeIndex(memTypeIndex);
+
+		memory = device.allocateMemoryUnique(allocInfo);
+		device.bindImageMemory(image.get(), memory.get(), 0);
+
+	}
+
+	void Image::createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspect, vk::UniqueImageView& imageView)
+	{
+		vk::ImageSubresourceRange range;
+		range.setAspectMask(aspect)
+			.setBaseArrayLayer(0)
+			.setBaseMipLevel(0)
+			.setLayerCount(1)
+			.setLevelCount(1);
+
+		vk::ImageViewCreateInfo createInfo;
+		createInfo.setImage(image)
+			.setViewType(vk::ImageViewType::e2D)
+			.setFormat(format)
+			.setSubresourceRange(range);
+
+		imageView = Context::Instance().device.createImageViewUnique(createInfo);
+	}
+
 	void Image::createImage(std::string_view src)
 	{
 		auto& device = Context::Instance().device;
@@ -174,7 +232,7 @@ namespace doll
 	
 	void Image::createImageview()
 	{
-		vk::ImageSubresourceRange range;
+		/*vk::ImageSubresourceRange range;
 		range.setAspectMask(vk::ImageAspectFlagBits::eColor)
 			.setBaseArrayLayer(0)
 			.setBaseMipLevel(0)
@@ -187,7 +245,8 @@ namespace doll
 			.setFormat(vk::Format::eR8G8B8A8Srgb)
 			.setSubresourceRange(range);
 
-		imageview_ = Context::Instance().device.createImageViewUnique(createInfo);
+		imageview_ = Context::Instance().device.createImageViewUnique(createInfo);*/
+		createImageView(textureImage_.get(), vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor, imageview_);
 	}
 	
 	void Image::createTextureSampler()

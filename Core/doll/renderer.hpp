@@ -15,6 +15,8 @@ namespace doll {
 		void copyBuf2Image(vk::Buffer& src, vk::Image& dst, uint32_t width, uint32_t height);
 		void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldlayout, vk::ImageLayout newlayout);
 		void updateSets(vk::ImageView imageView, vk::Sampler sampler);
+		void createDepthresources();
+		
 	private:
 		void initCmdPool();
 		void createCmdBuffers();
@@ -32,7 +34,11 @@ namespace doll {
 		void updateSingleSet(int index);
 		void createIndexBuffer();
 		void bufferIndexData();
+
 	public:
+		vk::UniqueImage depthImage_;
+		vk::UniqueDeviceMemory depthImageMemory_;
+		vk::UniqueImageView depthImageView_;
 		
 	private:
 		int maxFlightCount_;

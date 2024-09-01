@@ -11,6 +11,7 @@ namespace doll {
 		void getImages();
 		void createImageViews();
 		void CreateFramebuffers(int w,int h);
+		vk::Extent2D getExtent();
 	private:
 		
 	public:
