@@ -21,6 +21,7 @@ namespace doll {
 			.setSharingMode(vk::SharingMode::eExclusive);
 		buffer = Context::Instance().device.createBufferUnique(createInfo);
 	}
+
 	void Buffer::allocateMemory(MemoryInfo info)
 	{
 		vk::MemoryAllocateInfo allocInfo;
@@ -29,10 +30,12 @@ namespace doll {
 
 		memory = Context::Instance().device.allocateMemoryUnique(allocInfo);
 	}
+
 	void Buffer::bindingMem2Buf()
 	{
 		Context::Instance().device.bindBufferMemory(buffer.get(),memory.get(),0);
 	}
+
 	Buffer::MemoryInfo Buffer::queryMemoryInfo( vk::MemoryPropertyFlags property)
 	{
 		MemoryInfo info;

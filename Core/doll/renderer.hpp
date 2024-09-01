@@ -2,6 +2,7 @@
 #include "vulkan/vulkan.hpp"
 #include "buffer.hpp"
 #include "uniform.hpp"
+#include "image.hpp"
 
 
 
@@ -10,8 +11,10 @@ namespace doll {
 	public:
 		Renderer(int maxFightCount = 2);
 		~Renderer();
-		void DrawTriangle();
-
+		void DrawFrame();
+		void copyBuf2Image(vk::Buffer& src, vk::Image& dst, uint32_t width, uint32_t height);
+		void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldlayout, vk::ImageLayout newlayout);
+		void updateSets(vk::ImageView imageView, vk::Sampler sampler);
 	private:
 		void initCmdPool();
 		void createCmdBuffers();
@@ -26,12 +29,11 @@ namespace doll {
 		void copyBuffer(vk::Buffer& src, vk::Buffer& dst, size_t size, size_t srcOffset, size_t dstOffset);
 		void createDescriptorPool();
 		void allocateSets();
-		void updateSets();
 		void updateSingleSet(int index);
 		void createIndexBuffer();
 		void bufferIndexData();
 	public:
-
+		
 	private:
 		int maxFlightCount_;
 		int curFrame_;
@@ -49,6 +51,9 @@ namespace doll {
 
 		std::unique_ptr<Buffer> cpuIndexBuffer_;
 		std::unique_ptr<Buffer> gpuIndexBuffer_;
+
+		std::unique_ptr<Buffer> cpuImageBuffer_;
+		vk::UniqueImage textureImage_;
 
 		vk::UniqueDescriptorPool descriptorPool_;
 		std::vector<vk::DescriptorSet> sets_;  //DescriptorSet will destroy when pool destroy
