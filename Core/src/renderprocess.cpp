@@ -60,6 +60,15 @@ namespace doll {
 
 		//7.test
 		//
+		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+		depthStencilState.setDepthWriteEnable(true)
+			.setDepthTestEnable(true)
+			.setDepthCompareOp(vk::CompareOp::eLess)
+			.setDepthBoundsTestEnable(false)
+			.setMinDepthBounds(0.0f)
+			.setMaxDepthBounds(1.0f)
+			.setStencilTestEnable(false);
+		createInfo.setPDepthStencilState(&depthStencilState);
 
 
 		//8.color blending
@@ -101,7 +110,6 @@ namespace doll {
 	void RenderProcess::InitRenderPass()
 	{
 		setlayout = createSetlayout();
-		vk::RenderPassCreateInfo createInfo;
 		vk::AttachmentDescription attachDesc;
 		attachDesc.setFormat(Context::Instance().swapchain->info.format.format)
 			.setInitialLayout(vk::ImageLayout::eUndefined)
@@ -112,27 +120,49 @@ namespace doll {
 			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
 			.setSamples(vk::SampleCountFlagBits::e1)
 			;
-		createInfo.setAttachments(attachDesc);
 
-		vk::SubpassDescription subpassDesc;
 		vk::AttachmentReference reference;
 		reference.setAttachment(0) //attachments的下标
 			.setLayout(vk::ImageLayout::eColorAttachmentOptimal)
 			;
+
+		//创建深度附着
+		vk::AttachmentDescription depAttachDesc;
+		depAttachDesc.setFormat(Context::Instance().findDepthFormat())
+			.setInitialLayout(vk::ImageLayout::eUndefined)
+			.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
+			.setLoadOp(vk::AttachmentLoadOp::eClear)
+			.setStoreOp(vk::AttachmentStoreOp::eDontCare)
+			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+			.setSamples(vk::SampleCountFlagBits::e1)
+			;
+
+		vk::AttachmentReference depReference;
+		depReference.setAttachment(1) //attachments的下标
+			.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
+			;
+
+		vk::SubpassDescription subpassDesc;
 		subpassDesc.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
 			.setColorAttachments(reference)
-			; 
-		createInfo.setSubpasses(subpassDesc);
+			.setPDepthStencilAttachment(&depReference);
+
+		std::array<vk::AttachmentDescription, 2> attachments = { attachDesc, depAttachDesc };
 
 		vk::SubpassDependency dependency;
 		dependency.setSrcSubpass(VK_SUBPASS_EXTERNAL)
 			.setDstSubpass(0) //subpasses的下标
-			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
-			.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+			.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests)
+			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests)
 			;
-		createInfo.setDependencies(dependency);
 
+		vk::RenderPassCreateInfo createInfo;
+		createInfo.setAttachmentCount(2);
+		createInfo.setAttachments(attachments);
+		createInfo.setSubpasses(subpassDesc);
+		createInfo.setDependencies(dependency);
 		renderpass = Context::Instance().device.createRenderPassUnique(createInfo);
 	}
 	

@@ -128,6 +128,36 @@ namespace doll {
 	{
 		renderer.reset(new Renderer());
 	}
+
+
+	vk::Format Context::findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features) {
+
+		for (auto format : candidates) {
+			auto props = Context::Instance().physicaldevice.getFormatProperties(format);
+			if (tiling == vk::ImageTiling::eLinear && (props.optimalTilingFeatures & features) == features)
+			{
+				return format;
+			}
+			else if (tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features)
+			{
+				return format;
+			}
+		}
+		throw std::runtime_error("failed to find supported format!");
+	}
+
+	vk::Format Context::findDepthFormat()
+	{
+		return findSupportedFormat(
+			{ vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint },
+			vk::ImageTiling::eOptimal,
+			vk::FormatFeatureFlagBits::eDepthStencilAttachment
+		);
+	}
+
+	bool Context::hasStencilComponent(vk::Format format) {
+		return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
+	}
 }
 
 

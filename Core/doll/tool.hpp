@@ -1,3 +1,4 @@
+#pragma once
 #ifdef DEBUG
 	#define Log(x) std::cout<<x<<std::endl;
 #else
@@ -45,4 +46,5 @@ namespace doll {
 		return content;
 	}
 
+	
 }

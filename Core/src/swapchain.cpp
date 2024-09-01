@@ -105,11 +105,17 @@ namespace doll {
 
 	void Swapchain::CreateFramebuffers(int w,int h)
 	{
+		auto depthImageV = Context::Instance().renderer.get()->depthImageView_.get();
+
 		framebuffers.resize(images.size());
 		for (int i=0;i<framebuffers.size();++i)
 		{
+			std::array<vk::ImageView, 2> attachments = {
+				imageViews[i],
+				depthImageV
+			};
 			vk::FramebufferCreateInfo createInfo;
-			createInfo.setAttachments(imageViews[i])
+			createInfo.setAttachments(attachments)
 				.setWidth(w)
 				.setHeight(h)
 				.setRenderPass(Context::Instance().renderProcess->renderpass.get())
@@ -117,5 +123,10 @@ namespace doll {
 				;
 			framebuffers[i] = Context::Instance().device.createFramebufferUnique(createInfo);
 		}
+	}
+
+	vk::Extent2D Swapchain::getExtent()
+	{
+		return info.imageExtent;
 	}
 }
